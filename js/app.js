@@ -453,16 +453,21 @@ const App = {
                 legend: { display: false },
                 datalabels: {
                     color: '#fff',
-                    anchor: 'end',
-                    align: 'top',
-                    offset: -5,
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (val) => val.toFixed(1)
+                    anchor: 'center',
+                    align: 'center',
+                    font: { weight: 'bold', size: 10 },
+                    textAlign: 'center',
+                    formatter: (val, context) => {
+                        const label = context.chart.data.labels[context.dataIndex];
+                        return `${label}\n${val.toFixed(1)}`;
+                    },
+                    textShadowBlur: 4,
+                    textShadowColor: 'rgba(0,0,0,0.8)'
                 }
             },
             scales: { 
                 y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { display: false } }, 
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } 
             }
         };
 
@@ -500,15 +505,19 @@ const App = {
                 maintainAspectRatio: false, 
                 animation: { duration: 0 },
                 plugins: { 
-                    legend: { position: 'bottom', labels: { color: '#f8fafc', boxWidth: 12, padding: 15 } },
+                    legend: { position: 'bottom', labels: { color: '#f8fafc', boxWidth: 12, padding: 10, font: { size: 11 } } },
                     datalabels: {
                         color: '#fff',
-                        font: { weight: 'bold', size: 12 },
-                        formatter: (val) => val,
+                        font: { weight: 'bold', size: 11 },
+                        formatter: (val, context) => {
+                            const label = context.chart.data.labels[context.dataIndex];
+                            return `${label}\n${val}`;
+                        },
                         anchor: 'center',
                         align: 'center',
+                        textAlign: 'center',
                         textShadowBlur: 4,
-                        textShadowColor: 'rgba(0,0,0,0.5)'
+                        textShadowColor: 'rgba(0,0,0,0.8)'
                     }
                 } 
             }
