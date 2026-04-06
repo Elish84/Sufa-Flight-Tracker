@@ -431,7 +431,6 @@ const App = {
             unitData[r.operatingUnit] = (unitData[r.operatingUnit] || 0) + (r.totalFlightMinutes / 60);
             droneData[r.droneTailNumber] = (droneData[r.droneTailNumber] || 0) + (r.totalFlightMinutes / 60);
             
-            // Collect malfunction types from array
             if (r.malfunctions) {
                 r.malfunctions.forEach(m => {
                     malfData[m.type] = (malfData[m.type] || 0) + 1;
@@ -442,7 +441,6 @@ const App = {
             }
         });
 
-        // Stability: Clear containers and redraw
         if (App.charts.unit) App.charts.unit.destroy();
         if (App.charts.drone) App.charts.drone.destroy();
         if (App.charts.malf) App.charts.malf.destroy();
@@ -450,13 +448,29 @@ const App = {
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 0 }, // Disable animations to prevent resize loops
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { display: false } } }
+            animation: { duration: 0 },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: '#fff',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: -5,
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (val) => val.toFixed(1)
+                }
+            },
+            scales: { 
+                y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { display: false } }, 
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+            }
         };
+
+        const barPlugins = [ChartDataLabels];
 
         App.charts.unit = new Chart(ctxUnit, {
             type: 'bar',
+            plugins: barPlugins,
             data: {
                 labels: Object.keys(unitData),
                 datasets: [{ label: 'שעות', data: Object.values(unitData), backgroundColor: '#3b82f6', borderRadius: 8 }]
@@ -466,6 +480,7 @@ const App = {
 
         App.charts.drone = new Chart(ctxDrone, {
             type: 'bar',
+            plugins: barPlugins,
             data: {
                 labels: Object.keys(droneData),
                 datasets: [{ label: 'שעות', data: Object.values(droneData), backgroundColor: '#10b981', borderRadius: 8 }]
@@ -475,6 +490,7 @@ const App = {
 
         App.charts.malf = new Chart(ctxMalf, {
             type: 'pie',
+            plugins: barPlugins,
             data: {
                 labels: Object.keys(malfData),
                 datasets: [{ data: Object.values(malfData), backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'] }]
@@ -483,7 +499,18 @@ const App = {
                 responsive: true, 
                 maintainAspectRatio: false, 
                 animation: { duration: 0 },
-                plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } } 
+                plugins: { 
+                    legend: { position: 'bottom', labels: { color: '#f8fafc', boxWidth: 12, padding: 15 } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (val) => val,
+                        anchor: 'center',
+                        align: 'center',
+                        textShadowBlur: 4,
+                        textShadowColor: 'rgba(0,0,0,0.5)'
+                    }
+                } 
             }
         });
     },
@@ -609,10 +636,6 @@ const App = {
         }
     },
 };
-
-// Start the APP
-window.addEventListener('DOMContentLoaded', () => App.init());
-
 
 // Start the APP
 window.addEventListener('DOMContentLoaded', () => App.init());
