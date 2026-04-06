@@ -84,10 +84,16 @@ const App = {
         // Navigation Logic - Only once
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
-                App.editingId = null; // Clear edit mode when navigating
                 const view = btn.getAttribute('data-view');
+                if (view === 'form') App.editingId = null; // Clear if manual new
                 App.switchView(view);
             });
+        });
+
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        cancelBtn.addEventListener('click', () => {
+            App.editingId = null;
+            App.switchView('records');
         });
 
         // Form Calculation Logic
@@ -269,7 +275,14 @@ const App = {
 
         const date = Utils.formatDate(record.flightDate);
         const malfHtml = record.malfunctions && record.malfunctions.length > 0 
-            ? record.malfunctions.map(m => `<li>${m.type}</li>`).join('') 
+            ? record.malfunctions.map(m => {
+                const isCritical = m.severity === 'קריטי';
+                const critIcon = isCritical ? '<i data-lucide="flag" class="color-critical" style="width:14px;height:14px;margin-left:4px;"></i>' : '';
+                return `<li style="margin-bottom:5px; list-style:none; display:flex; align-items:center;">
+                    ${critIcon}
+                    <span>${m.type} <span style="opacity:0.7; font-size:0.85rem;">(${m.severity || 'לא צוין'})</span></span>
+                </li>`;
+            }).join('') 
             : '<li>אין תקלות</li>';
 
         const content = `
@@ -284,7 +297,7 @@ const App = {
             </div>
             <div class="detail-section">
                 <h4 style="margin: 15px 0 5px; color: var(--text-secondary);">תקלות:</h4>
-                <ul style="padding-right: 20px; color: var(--danger);">${malfHtml}</ul>
+                <ul style="padding: 0; margin: 0; list-style: none;">${malfHtml}</ul>
             </div>
             <div class="detail-section">
                 <h4 style="margin: 15px 0 5px; color: var(--text-secondary);">פירוט והערות:</h4>
@@ -413,12 +426,20 @@ const App = {
         document.querySelectorAll('.sub-view').forEach(v => v.classList.add('hidden'));
         document.getElementById(`${viewId}-view`).classList.remove('hidden');
         
-        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`.nav-item[data-view="${viewId}"]`).classList.add('active');
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(btn => btn.classList.remove('active'));
+        const activeNav = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+        if (activeNav) activeNav.classList.add('active');
         
+        // Reset Form labels if not editing
+        if (viewId === 'form' && !App.editingId) {
+            document.getElementById('save-flight-btn').innerText = 'שמור טיסה';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
         // Update Title
         const titles = { 'form': 'רישום טיסה', 'dashboard': 'דשבורד', 'records': 'היסטוריית טיסות', 'admin': 'ניהול מערכת' };
-        document.getElementById('page-title').innerText = titles[viewId];
+        document.getElementById('page-title').innerText = titles[viewId] || '';
         
         if (viewId === 'dashboard') App.updateDashboard();
         lucide.createIcons();
@@ -653,6 +674,10 @@ const App = {
         App.editingId = id;
         App.switchView('form');
         
+        // UI Updates for Edit Mode
+        document.getElementById('save-flight-btn').innerText = 'עדכן טיסה';
+        document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
         // Fill basic fields
         document.getElementById('operating-unit').value = record.operatingUnit;
         document.getElementById('tail-number').value = record.droneTailNumber;

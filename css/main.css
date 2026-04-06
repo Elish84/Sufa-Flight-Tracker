@@ -258,7 +258,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-primary:active { transform: scale(0.98); }
-.btn-primary.large { width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px; }
+.btn-primary.large { padding: 15px; font-size: 1.1rem; }
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.form-actions button {
+    flex: 1;
+}
 
 .icon-btn {
     background: none;
