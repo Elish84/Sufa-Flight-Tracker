@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>סופה - ניהול טיסות</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Google Fonts: Assistant & Heebo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Heebo:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-theme">
+    <div id="app">
+        <!-- Auth Screen -->
+        <div id="auth-container" class="view hidden">
+            <div class="auth-card">
+                <h1>סופה-Flight Tracker</h1>
+                <p>מערכת ניהול טיסות רחפנים טעונים</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="email">דואר אלקטרוני</label>
+                        <input type="email" id="email" required placeholder="name@unit.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">סיסמה</label>
+                        <input type="password" id="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary">התחבר</button>
+                    <div id="auth-error" class="error-text"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-container" class="view hidden">
+            <header>
+                <div class="header-content">
+                    <h1 id="page-title">רישום טיסה</h1>
+                    <div class="status-indicators">
+                        <span id="sync-status" class="status-tag online" title="מחובר"></span>
+                        <button id="logout-btn" class="icon-btn"><i data-lucide="log-out"></i></button>
+                    </div>
+                </div>
+            </header>
+
+            <main id="view-content">
+                <!-- Flight Form View -->
+                <section id="form-view" class="sub-view">
+                    <form id="flight-log-form">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="operating-unit">יחידה מפעילה</label>
+                                <select id="operating-unit" required>
+                                    <option value="" disabled selected>בחר יחידה...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="tail-number">מספר זנב</label>
+                                <input type="text" id="tail-number" list="tail-suggestions" required placeholder="הזן מס' זנב">
+                                <datalist id="tail-suggestions"></datalist>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="flight-date">תאריך</label>
+                                <input type="date" id="flight-date" required>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="takeoff-time">זמן המראה</label>
+                                <input type="time" id="takeoff-time" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="landing-time">זמן נחיתה</label>
+                                <input type="time" id="landing-time" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="info-card">
+                                <span>סה"כ זמן טיסה:</span>
+                                <strong id="calc-total-time">0</strong>
+                                <span>דקות</span>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>סיבת נחיתה</label>
+                            <div class="radio-group">
+                                <label class="radio-btn">
+                                    <input type="radio" name="landing-reason" value="initiated" checked>
+                                    <span>יזומה</span>
+                                </label>
+                                <label class="radio-btn">
+                                    <input type="radio" name="landing-reason" value="malfunction">
+                                    <span>בגלל תקלה</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="malfunction-section">
+                            <label>תקלות במהלך הטיסה</label>
+                            <div id="malfunctions-list" class="malfunctions-dynamic-list"></div>
+                            <button type="button" id="add-malfunction-btn" class="btn-secondary small">
+                                <i data-lucide="plus"></i> הוסף תקלה
+                            </button>
+                        </div>
+
+                        <div class="form-row mt-20">
+                            <div class="input-group">
+                                <label for="general-notes">פירוט והערות</label>
+                                <textarea id="general-notes" rows="3" placeholder="הערות נוספות על הטיסה..."></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" id="save-flight-btn" class="btn-primary large">שמור טיסה</button>
+                    </form>
+                </section>
+
+                <!-- Dashboard View -->
+                <section id="dashboard-view" class="sub-view hidden">
+                    <div class="dashboard-filters">
+                        <div class="filter-row">
+                            <input type="date" id="dash-date-from" placeholder="מאתריך">
+                            <input type="date" id="dash-date-to" placeholder="עד תאריך">
+                        </div>
+                        <div class="filter-row mt-10">
+                            <select id="dash-tail-filter">
+                                <option value="">כל כלי הטיס</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">סה"כ שעות טיסה</span>
+                            <span id="stat-total-hours" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">מס' טיסות</span>
+                            <span id="stat-total-flights" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-card urgent">
+                            <span class="stat-label">תקלות שתועדו</span>
+                            <span id="stat-malfunctions" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="chart-container fixed-height">
+                        <h3>שעות טיסה לפי יחידה</h3>
+                        <canvas id="unit-chart"></canvas>
+                    </div>
+                    <div class="chart-container fixed-height">
+                        <h3>שעות טיסה לפי כלי</h3>
+                        <canvas id="drone-chart"></canvas>
+                    </div>
+                    <div class="chart-container fixed-height">
+                        <h3>פילוח סוגי תקלות</h3>
+                        <canvas id="malfunction-chart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Records View -->
+                <section id="records-view" class="sub-view hidden">
+                    <div class="records-header">
+                        <div class="input-group">
+                            <input type="text" id="record-search" placeholder="חפש לפי יחידה או זנב...">
+                        </div>
+                    </div>
+                    <div id="records-list" class="records-list">
+                        <!-- Items injected here -->
+                        <div class="placeholder-text">טוען נתונים...</div>
+                    </div>
+                </section>
+
+                <!-- Admin View -->
+                <section id="admin-view" class="sub-view hidden">
+                    <div class="admin-section">
+                        <h3>ניהול יחידות</h3>
+                        <form id="add-unit-form" class="inline-form">
+                            <input type="text" id="new-unit-name" required placeholder="שם יחידה חדשה">
+                            <button type="submit" class="btn-primary icon-only"><i data-lucide="plus"></i></button>
+                        </form>
+                        <ul id="units-list" class="admin-list"></ul>
+                    </div>
+
+                    <div class="admin-section mt-20">
+                        <h3>ניהול סוגי תקלות</h3>
+                        <form id="add-malfunction-type-form" class="inline-form">
+                            <input type="text" id="new-malfunction-name" required placeholder="סוג תקלה חדש">
+                            <button type="submit" class="btn-primary icon-only"><i data-lucide="plus"></i></button>
+                        </form>
+                        <ul id="malfunction-types-list" class="admin-list"></ul>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-view="form">
+                    <i data-lucide="plus-circle"></i>
+                    <span>רישום</span>
+                </button>
+                <button class="nav-item" data-view="dashboard">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>דשבורד</span>
+                </button>
+                <button class="nav-item" data-view="records">
+                    <i data-lucide="list"></i>
+                    <span>רישומים</span>
+                </button>
+                <button class="nav-item hidden" id="nav-item-admin" data-view="admin">
+                    <i data-lucide="settings"></i>
+                    <span>ניהול</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Global Toast Container -->
+        <div id="toast-container"></div>
+        
+        <!-- Offline Sync Indicator -->
+        <div id="sync-notice" class="hidden">
+            <span class="icon"><i data-lucide="cloud-off"></i></span>
+            <span class="text">שומר מקומית - תסונכרן כשיחזור האינטרנט</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- IndexedDB Library -->
+    <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/offline.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Init Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
