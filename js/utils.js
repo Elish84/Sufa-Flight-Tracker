@@ -58,5 +58,30 @@ const Utils = {
     formatDate: (dateStr) => {
         const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
         return new Date(dateStr).toLocaleDateString('he-IL', options);
+    },
+
+    // Format flight record for WhatsApp share
+    formatWhatsAppMessage: (record) => {
+        const date = Utils.formatDate(record.flightDate);
+        const reason = record.landingReason === 'initiated' ? 'יזומה 🟢' : 'בגלל תקלה 🔴';
+        
+        let malfText = '';
+        if (record.malfunctions && record.malfunctions.length > 0) {
+            malfText = '\n⚠️ *תקלות:* ' + record.malfunctions.map(m => m.type).join(', ');
+        }
+
+        const notesText = record.notes ? `\n📝 *הערות:* ${record.notes}` : '';
+
+        return encodeURIComponent(
+            `🚀 *דיווח טיסה חדש - סופה*\n\n` +
+            `📅 *תאריך:* ${date}\n` +
+            `🚁 *מספר זנב:* ${record.droneTailNumber}\n` +
+            `👥 *יחידה:* ${record.operatingUnit}\n` +
+            `⏱️ *זמן:* ${record.takeoffTime} - ${record.landingTime} (${record.totalFlightMinutes} דק')\n` +
+            `🛬 *נחיתה:* ${reason}` +
+            `${malfText}` +
+            `${notesText}\n\n` +
+            `_נשלח ממערכת סופה_ 🦅`
+        );
     }
 };

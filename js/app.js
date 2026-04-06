@@ -72,13 +72,16 @@ const App = {
             }
 
             try {
+                let savedRecord;
                 if (App.editingId) {
-                    await Database.updateFlightRecord(App.editingId, formData);
+                    savedRecord = await Database.updateFlightRecord(App.editingId, formData);
                     Utils.showToast('רישום עודכן בהצלחה', 'success');
                 } else {
-                    await Database.saveFlightRecord(formData);
+                    savedRecord = await Database.saveFlightRecord(formData);
                     Utils.showToast('טיסה נשמרה בהצלחה', 'success');
                 }
+                
+                const finalRecord = { ...formData, ...savedRecord };
                 
                 App.editingId = null;
                 e.target.reset();
@@ -86,6 +89,14 @@ const App = {
                 document.getElementById('malfunctions-list').innerHTML = '';
                 App.loadTailSuggestions();
                 
+                // WhatsApp Share Option
+                setTimeout(() => {
+                    if (confirm('האם ברצונך לשתף את סיכום הטיסה ב-WhatsApp?')) {
+                        const msg = Utils.formatWhatsAppMessage(finalRecord);
+                        window.open(`https://wa.me/?text=${msg}`, '_blank');
+                    }
+                }, 500);
+
                 // Switch back to records after update
                 if (App.currentView === 'form' && formData.operatingUnit) {
                     App.switchView('records');
@@ -119,7 +130,96 @@ const App = {
         document.getElementById('dash-date-from').addEventListener('change', () => App.updateDashboard());
         document.getElementById('dash-date-to').addEventListener('change', () => App.updateDashboard());
         document.getElementById('dash-tail-filter').addEventListener('change', () => App.updateDashboard());
+
+        // Global Modal Close
+        document.getElementById('modal-close').addEventListener('click', () => App.closeModal());
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') App.closeModal();
+        });
+
+        // Malfunction Summary Click (Dashboard)
+        document.querySelector('.stat-card.urgent').addEventListener('click', () => {
+            if (App.currentFilteredRecords) App.showMalfunctionBreakdown(App.currentFilteredRecords);
+        });
     },
+
+    showModal: (title, htmlContent) => {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-body').innerHTML = htmlContent;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; 
+        lucide.createIcons();
+    },
+
+    closeModal: () => {
+        document.getElementById('modal-overlay').classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    showRecordDetails: (id) => {
+        const record = App.allRecords.find(r => r.id === id);
+        if (!record) return;
+
+        const date = Utils.formatDate(record.flightDate);
+        const malfHtml = record.malfunctions && record.malfunctions.length > 0 
+            ? record.malfunctions.map(m => `<li>${m.type}</li>`).join('') 
+            : '<li>אין תקלות</li>';
+
+        const content = `
+            <div class="detail-grid">
+                <span class="detail-label">מספר זנב:</span><span class="detail-value">${record.droneTailNumber}</span>
+                <span class="detail-label">יחידה:</span><span class="detail-value">${record.operatingUnit}</span>
+                <span class="detail-label">תאריך:</span><span class="detail-value">${date}</span>
+                <span class="detail-label">זמן המראה:</span><span class="detail-value">${record.takeoffTime}</span>
+                <span class="detail-label">זמן נחיתה:</span><span class="detail-value">${record.landingTime}</span>
+                <span class="detail-label">משך טיסה:</span><span class="detail-value">${record.totalFlightMinutes} דקות</span>
+                <span class="detail-label">סיבת נחיתה:</span><span class="detail-value">${record.landingReason === 'initiated' ? 'יזומה 🟢' : 'בגלל תקלה 🔴'}</span>
+            </div>
+            <div class="detail-section">
+                <h4 style="margin: 15px 0 5px; color: var(--text-secondary);">תקלות:</h4>
+                <ul style="padding-right: 20px; color: var(--danger);">${malfHtml}</ul>
+            </div>
+            <div class="detail-section">
+                <h4 style="margin: 15px 0 5px; color: var(--text-secondary);">פירוט והערות:</h4>
+                <p style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">${record.notes || 'אין הערות'}</p>
+            </div>
+        `;
+
+        App.showModal(`פרטי טיסה: ${record.droneTailNumber}`, content);
+    },
+
+    showMalfunctionBreakdown: (data) => {
+        const malfCounts = {};
+        data.forEach(r => {
+            if (r.malfunctions) {
+                r.malfunctions.forEach(m => {
+                    malfCounts[m.type] = (malfCounts[m.type] || 0) + 1;
+                });
+            } else if (r.landingReason === 'malfunction') {
+                const type = r.malfunctionType || 'אחר';
+                malfCounts[type] = (malfCounts[type] || 0) + 1;
+            }
+        });
+
+        if (Object.keys(malfCounts).length === 0) {
+            App.showModal('סיכום תקלות', '<p style="text-align:center; padding: 20px;">לא נמצאו תקלות בטווח שנבחר.</p>');
+            return;
+        }
+
+        const listHtml = Object.entries(malfCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([type, count]) => `
+                <div class="malf-summary-row">
+                    <span>${type}</span>
+                    <span class="malf-count">${count}</span>
+                </div>
+            `).join('');
+
+        App.showModal('סיכום סוגי תקלות', `<div class="malf-summary-list">${listHtml}</div>`);
+    },
+
+    currentFilteredRecords: [],
+
 
     addMalfunctionRow: (initialValue = '') => {
         const list = document.getElementById('malfunctions-list');
@@ -235,6 +335,8 @@ const App = {
         if (dateFrom) filtered = filtered.filter(r => r.flightDate >= dateFrom);
         if (dateTo) filtered = filtered.filter(r => r.flightDate <= dateTo);
         if (selectedTail) filtered = filtered.filter(r => r.droneTailNumber === selectedTail);
+
+        App.currentFilteredRecords = filtered;
 
         // Stats
         const totalMins = filtered.reduce((acc, r) => acc + (r.totalFlightMinutes || 0), 0);
@@ -418,6 +520,10 @@ const App = {
             const malfIcon = (r.malfunctions && r.malfunctions.length > 0) || r.landingReason === 'malfunction' ? ' ⚠️' : '';
             const item = document.createElement('div');
             item.className = 'record-item';
+            item.onclick = (e) => {
+                if (e.target.closest('.record-actions')) return;
+                App.showRecordDetails(r.id);
+            };
             item.innerHTML = `
                 <div class="record-info">
                     <span class="record-title">${r.droneTailNumber} (${r.operatingUnit})</span>
