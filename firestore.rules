@@ -28,6 +28,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Malfunction Types Rules
+    match /malfunctionTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Malfunction Severities Rules
+    match /malfunctionSeverities/{sevId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // Admins Collection Rules
     match /admins/{adminId} {
       allow read: if isAuthenticated();
