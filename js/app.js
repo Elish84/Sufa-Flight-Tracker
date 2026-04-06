@@ -7,8 +7,37 @@ const App = {
     malfunctionTypes: [],
     charts: {},
     isInitialized: false, // Prevent double-init
-    editingId: null, // Track currently edited record ID
+    editingId: null,
     unsubscribers: [], // Track Firestore listeners
+    pwaInstallPrompt: null,
+
+    checkPWAStatus: () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isStandalone) {
+            // Already installed
+            document.getElementById('pwa-install-section').classList.add('hidden');
+            document.getElementById('pwa-install-header-btn').classList.add('hidden');
+            return;
+        }
+
+        if (isIOS) {
+            // Show guide for iOS users after Login or on Init
+            setTimeout(() => {
+                const guideShown = localStorage.getItem('ios_guide_shown');
+                if (!guideShown) {
+                    App.showInstallGuide();
+                    localStorage.setItem('ios_guide_shown', 'true');
+                }
+            }, 3000);
+        }
+    },
+
+    showInstallGuide: () => {
+        document.getElementById('ios-install-modal').classList.remove('hidden');
+        lucide.createIcons();
+    },
 
     init: () => {
         if (App.isInitialized) return;
@@ -16,6 +45,40 @@ const App = {
 
         // Initialize Auth
         Auth.init();
+
+        // PWA Install Handling
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            App.pwaInstallPrompt = e;
+            // Show install buttons
+            document.getElementById('pwa-install-section').classList.remove('hidden');
+            document.getElementById('pwa-install-header-btn').classList.remove('hidden');
+        });
+
+        const installBtn = document.getElementById('pwa-install-btn');
+        const headerInstallBtn = document.getElementById('pwa-install-header-btn');
+
+        const triggerInstall = async () => {
+            if (!App.pwaInstallPrompt) return;
+            App.pwaInstallPrompt.prompt();
+            const { outcome } = await App.pwaInstallPrompt.userChoice;
+            if (outcome === 'accepted') {
+                App.pwaInstallPrompt = null;
+                document.getElementById('pwa-install-section').classList.add('hidden');
+                document.getElementById('pwa-install-header-btn').classList.add('hidden');
+            }
+        };
+
+        installBtn.addEventListener('click', triggerInstall);
+        headerInstallBtn.addEventListener('click', triggerInstall);
+
+        // iOS Install Guide
+        document.getElementById('ios-modal-close').addEventListener('click', () => {
+            document.getElementById('ios-install-modal').classList.add('hidden');
+        });
+
+        // Check if should show iOS guide
+        App.checkPWAStatus();
         
         // Navigation Logic - Only once
         document.querySelectorAll('.nav-item').forEach(btn => {

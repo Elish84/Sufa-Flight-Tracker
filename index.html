@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>סופה - ניהול טיסות</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121212">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="סופה">
+    
     <link rel="stylesheet" href="css/main.css">
     <!-- Google Fonts: Assistant & Heebo -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +39,11 @@
                     <button type="submit" class="btn-primary">התחבר</button>
                     <div id="auth-error" class="error-text"></div>
                 </form>
+                <div id="pwa-install-section" class="hidden">
+                    <button id="pwa-install-btn" class="btn-secondary small" style="margin-top: 20px; width: 100%;">
+                        <i data-lucide="download"></i> התקן אפליקציה
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -42,6 +53,7 @@
                 <div class="header-content">
                     <h1 id="page-title">רישום טיסה</h1>
                     <div class="status-indicators">
+                        <button id="pwa-install-header-btn" class="icon-btn hidden" title="התקן אפליקציה"><i data-lucide="download"></i></button>
                         <span id="sync-status" class="status-tag online" title="מחובר"></span>
                         <button id="logout-btn" class="icon-btn"><i data-lucide="log-out"></i></button>
                     </div>
@@ -237,6 +249,27 @@
                 </div>
                 <div id="modal-body" class="modal-body">
                     <!-- Content injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- iOS Install Instruction Modal -->
+        <div id="ios-install-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2>התקנה ב-iPhone</h2>
+                    <button id="ios-modal-close" class="icon-btn"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ios-guide">
+                        <p>כדי להשתמש ב-"סופה" כאפליקציה מלאה:</p>
+                        <ol class="ios-steps">
+                            <li>לחץ על כפתור השיתוף בתחתית הדפדפן <i data-lucide="share"></i></li>
+                            <li>גלול מטה ובחר באפשרות <strong>"הוסף למסך הבית"</strong> <i data-lucide="plus-square"></i></li>
+                            <li>לחץ על <strong>"הוסף"</strong> בפינה העליונה</li>
+                        </ol>
+                        <div class="ios-note">לאחר מכן האייקון של סופה יופיע במסך הבית שלך 🦅</div>
+                    </div>
                 </div>
             </div>
         </div>

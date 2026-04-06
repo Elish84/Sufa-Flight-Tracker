@@ -589,6 +589,55 @@ input:focus, select:focus, textarea:focus {
     z-index: 10;
 }
 
+/* iOS Install Guide */
+.ios-guide {
+    text-align: right;
+    padding: 10px 5px;
+}
+
+.ios-steps {
+    margin: 25px 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ios-steps li {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1.05rem;
+    line-height: 1.4;
+}
+
+.ios-steps i {
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 10px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.ios-steps strong {
+    color: var(--primary-color);
+}
+
+.ios-note {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent);
+    padding: 15px;
+    border-radius: 15px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+#ios-install-modal .modal-card {
+    border-color: var(--primary-color);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }

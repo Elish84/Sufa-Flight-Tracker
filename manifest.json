@@ -1,14 +1,20 @@
 {
-  "name": "סופה - ניהול טיסות",
+  "name": "סופה - מערכת ניהול טיסות",
   "short_name": "סופה",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#121212",
+  "theme_color": "#0f172a",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3142/3142940.png",
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
