@@ -226,6 +226,16 @@
                         </form>
                         <ul id="malfunction-types-list" class="admin-list"></ul>
                     </div>
+
+                    <div class="admin-section mt-20">
+                        <h3>ניהול רמות חומרה</h3>
+                        <form id="add-malfunction-severity-form" class="inline-form">
+                            <input type="text" id="new-severity-name" required placeholder="רמת חומרה חדשה (למשל: קריטי)">
+                            <button type="submit" class="btn-primary icon-only"><i data-lucide="plus"></i></button>
+                        </form>
+                        <ul id="malfunction-severities-list" class="admin-list"></ul>
+                        <p class="small-text" style="color: var(--text-secondary); margin-top: 5px;">* תקלות שיסומנו כ-"קריטי" יקבלו סמל דגל אדום בהיסטוריה.</p>
+                    </div>
                 </section>
             </main>
 

@@ -5,6 +5,7 @@ const App = {
     allRecords: [],
     units: [],
     malfunctionTypes: [],
+    malfunctionSeverities: [],
     charts: {},
     isInitialized: false, // Prevent double-init
     editingId: null,
@@ -112,8 +113,10 @@ const App = {
             e.preventDefault();
             
             const malfEntries = [];
-            document.querySelectorAll('.malfunction-entry select').forEach(s => {
-                if (s.value) malfEntries.push({ type: s.value });
+            document.querySelectorAll('.malfunction-entry-row').forEach(row => {
+                const type = row.querySelector('.malf-type-select').value;
+                const severity = row.querySelector('.malf-sev-select').value;
+                if (type) malfEntries.push({ type, severity });
             });
 
             const formData = {
@@ -176,6 +179,13 @@ const App = {
             e.preventDefault();
             const name = document.getElementById('new-malfunction-name').value;
             await Database.addMalfunctionType(name);
+            e.target.reset();
+        });
+
+        document.getElementById('add-malfunction-severity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-severity-name').value;
+            await Database.addMalfunctionSeverity(name);
             e.target.reset();
         });
 
@@ -318,19 +328,33 @@ const App = {
     currentFilteredRecords: [],
 
 
-    addMalfunctionRow: (initialValue = '') => {
+    addMalfunctionRow: (initialType = '', initialSeverity = '') => {
         const list = document.getElementById('malfunctions-list');
         const div = document.createElement('div');
-        div.className = 'malfunction-entry';
+        div.className = 'malfunction-entry-row';
         
-        const select = document.createElement('select');
-        select.innerHTML = '<option value="" disabled selected>סוג תקלה...</option>';
+        // Malfunction Type Select
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'malf-type-select';
+        typeSelect.innerHTML = '<option value="" disabled selected>סוג תקלה...</option>';
         App.malfunctionTypes.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t.name;
             opt.innerText = t.name;
-            if (t.name === initialValue) opt.selected = true;
-            select.appendChild(opt);
+            if (t.name === initialType) opt.selected = true;
+            typeSelect.appendChild(opt);
+        });
+
+        // Severity Select
+        const sevSelect = document.createElement('select');
+        sevSelect.className = 'malf-sev-select';
+        sevSelect.innerHTML = '<option value="" disabled selected>חומרה...</option>';
+        App.malfunctionSeverities.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name;
+            opt.innerText = s.name;
+            if (s.name === initialSeverity) opt.selected = true;
+            sevSelect.appendChild(opt);
         });
 
         const removeBtn = document.createElement('button');
@@ -339,7 +363,8 @@ const App = {
         removeBtn.innerHTML = '<i data-lucide="x-circle"></i>';
         removeBtn.onclick = () => div.remove();
 
-        div.appendChild(select);
+        div.appendChild(typeSelect);
+        div.appendChild(sevSelect);
         div.appendChild(removeBtn);
         list.appendChild(div);
         lucide.createIcons();
@@ -363,6 +388,12 @@ const App = {
             App.renderAdminMalfunctionTypes();
         });
         App.unsubscribers.push(unsubMalf);
+
+        const unsubSev = Database.getMalfunctionSeverities(severities => {
+            App.malfunctionSeverities = severities;
+            App.renderAdminSeverities();
+        });
+        App.unsubscribers.push(unsubSev);
 
         const unsubRecords = Database.getRecords(records => {
             App.allRecords = records;
@@ -402,6 +433,22 @@ const App = {
             li.innerHTML = `
                 <span>${t.name}</span>
                 <button class="icon-btn danger" onclick="Database.deleteMalfunctionType('${t.id}')">
+                    <i data-lucide="trash-2"></i>
+                </button>
+            `;
+            list.appendChild(li);
+        });
+        lucide.createIcons();
+    },
+
+    renderAdminSeverities: () => {
+        const list = document.getElementById('malfunction-severities-list');
+        list.innerHTML = '';
+        App.malfunctionSeverities.forEach(s => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${s.name}</span>
+                <button class="icon-btn danger" onclick="Database.deleteMalfunctionSeverity('${s.id}')">
                     <i data-lucide="trash-2"></i>
                 </button>
             `;
@@ -625,7 +672,7 @@ const App = {
         list.innerHTML = '';
         if (record.malfunctions) {
             record.malfunctions.forEach(m => {
-                App.addMalfunctionRow(m.type);
+                App.addMalfunctionRow(m.type, m.severity);
             });
         }
 
@@ -668,7 +715,11 @@ const App = {
         }
 
         filtered.forEach(r => {
-            const malfIcon = (r.malfunctions && r.malfunctions.length > 0) || r.landingReason === 'malfunction' ? ' ⚠️' : '';
+            const hasMalfunctions = (r.malfunctions && r.malfunctions.length > 0) || r.landingReason === 'malfunction';
+            const hasCritical = r.malfunctions && r.malfunctions.some(m => m.severity === 'קריטי');
+            
+            const malfIcon = hasCritical ? '<i data-lucide="flag" class="color-critical"></i>' : (hasMalfunctions ? ' ⚠️' : '');
+            
             const item = document.createElement('div');
             item.className = 'record-item';
             item.onclick = (e) => {
@@ -678,7 +729,7 @@ const App = {
             item.innerHTML = `
                 <div class="record-info">
                     <span class="record-title">${r.droneTailNumber} (${r.operatingUnit})</span>
-                    <span class="record-subtitle">${Utils.formatDate(r.flightDate)} | ${r.takeoffTime}-${r.landingTime}${malfIcon}</span>
+                    <span class="record-subtitle">${Utils.formatDate(r.flightDate)} | ${r.takeoffTime}-${r.landingTime} ${malfIcon}</span>
                 </div>
                 <div class="record-minutes">${r.totalFlightMinutes} דק'</div>
                 <div class="record-actions">
@@ -709,7 +760,7 @@ const App = {
             r.landingTime,
             r.totalFlightMinutes,
             r.landingReason === 'initiated' ? 'יזומה' : 'תקלה',
-            r.malfunctions ? r.malfunctions.map(m => m.type).join(', ') : '',
+            r.malfunctions ? r.malfunctions.map(m => `${m.type} (${m.severity || 'לא צוין'})`).join('; ') : '',
             (r.notes || '').replace(/\n/g, ' ')
         ]);
 

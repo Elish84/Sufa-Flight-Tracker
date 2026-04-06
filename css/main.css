@@ -675,6 +675,28 @@ input:focus, select:focus, textarea:focus {
     justify-content: center;
 }
 
+.malfunction-entry-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.malf-type-select {
+    flex: 2; /* Type is usually longer */
+}
+
+.malf-sev-select {
+    flex: 1.2;
+}
+
+.color-critical {
+    color: var(--danger) !important;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
 /* Records View Specifics */
 .records-header {
     background: var(--card-bg);

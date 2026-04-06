@@ -109,6 +109,32 @@ const Database = {
         }
     },
 
+    // Malfunction Severities management
+    getMalfunctionSeverities: (callback) => {
+        return db.collection('malfunctionSeverities').orderBy('name').onSnapshot(snapshot => {
+            const severities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            callback(severities);
+        });
+    },
+
+    addMalfunctionSeverity: async (name) => {
+        try {
+            await db.collection('malfunctionSeverities').add({ name });
+            Utils.showToast('רמת חומרה נוספה', 'success');
+        } catch (error) {
+            Utils.showToast('רק מנהל יכול להוסיף רמות חומרה', 'error');
+        }
+    },
+
+    deleteMalfunctionSeverity: async (id) => {
+        try {
+            await db.collection('malfunctionSeverities').doc(id).delete();
+            Utils.showToast('רמת חומרה נמחקה', 'success');
+        } catch (error) {
+            Utils.showToast('רק מנהל יכול למחוק רמות חומרה', 'error');
+        }
+    },
+
     // Check if current user is admin
     checkIfAdmin: async () => {
         if (!auth.currentUser) return false;
