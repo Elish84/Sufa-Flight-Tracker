@@ -7,6 +7,7 @@ const App = {
     malfunctionTypes: [],
     charts: {},
     isInitialized: false, // Prevent double-init
+    editingId: null, // Track currently edited record ID
     unsubscribers: [], // Track Firestore listeners
 
     init: () => {
@@ -19,6 +20,7 @@ const App = {
         // Navigation Logic - Only once
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
+                App.editingId = null; // Clear edit mode when navigating
                 const view = btn.getAttribute('data-view');
                 App.switchView(view);
             });
@@ -42,7 +44,7 @@ const App = {
             App.addMalfunctionRow();
         });
 
-        // Flight Form Submission
+        // Flight Form Submission (Create or Update)
         document.getElementById('flight-log-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -70,12 +72,24 @@ const App = {
             }
 
             try {
-                await Database.saveFlightRecord(formData);
-                Utils.showToast('טיסה נשמרה בהצלחה', 'success');
+                if (App.editingId) {
+                    await Database.updateFlightRecord(App.editingId, formData);
+                    Utils.showToast('רישום עודכן בהצלחה', 'success');
+                } else {
+                    await Database.saveFlightRecord(formData);
+                    Utils.showToast('טיסה נשמרה בהצלחה', 'success');
+                }
+                
+                App.editingId = null;
                 e.target.reset();
                 calcDisplay.innerText = '0';
                 document.getElementById('malfunctions-list').innerHTML = '';
                 App.loadTailSuggestions();
+                
+                // Switch back to records after update
+                if (App.currentView === 'form' && formData.operatingUnit) {
+                    App.switchView('records');
+                }
             } catch (error) {
                 Utils.showToast('שגיאה בשמירת נתונים', 'error');
             }
@@ -350,6 +364,42 @@ const App = {
         lucide.createIcons();
     },
 
+    editRecord: (id) => {
+        const record = App.allRecords.find(r => r.id === id);
+        if (!record) return;
+
+        App.editingId = id;
+        App.switchView('form');
+        
+        // Fill basic fields
+        document.getElementById('operating-unit').value = record.operatingUnit;
+        document.getElementById('tail-number').value = record.droneTailNumber;
+        document.getElementById('flight-date').value = record.flightDate;
+        document.getElementById('takeoff-time').value = record.takeoffTime;
+        document.getElementById('landing-time').value = record.landingTime;
+        
+        // Radio buttons
+        const radio = document.querySelector(`input[name="landing-reason"][value="${record.landingReason}"]`);
+        if (radio) radio.checked = true;
+
+        // Notes
+        document.getElementById('general-notes').value = record.notes || '';
+
+        // Malfunctions
+        const list = document.getElementById('malfunctions-list');
+        list.innerHTML = '';
+        if (record.malfunctions) {
+            record.malfunctions.forEach(m => {
+                App.addMalfunctionRow(m.type);
+            });
+        }
+
+        // Recalculate duration display
+        document.getElementById('calc-total-time').innerText = record.totalFlightMinutes || 0;
+        
+        Utils.showToast('עריכת רישום...', 'info');
+    },
+
     renderRecords: (search = '') => {
         const list = document.getElementById('records-list');
         list.innerHTML = '';
@@ -375,6 +425,7 @@ const App = {
                 </div>
                 <div class="record-minutes">${r.totalFlightMinutes} דק'</div>
                 <div class="record-actions">
+                    <button class="icon-btn" onclick="App.editRecord('${r.id}')"><i data-lucide="edit-3"></i></button>
                     <button class="icon-btn danger" onclick="App.confirmDeleteRecord('${r.id}')"><i data-lucide="trash-2"></i></button>
                 </div>
             `;

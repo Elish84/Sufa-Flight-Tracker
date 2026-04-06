@@ -14,8 +14,20 @@ const Database = {
 
         // Add to offline queue/syncer
         await syncEngine.addToQueue(fullRecord);
-        
-        // Immediate local feedback
+        return fullRecord;
+    },
+
+    // Update an existing flight log
+    updateFlightRecord: async (id, updatedData) => {
+        const fullRecord = {
+            id,
+            ...updatedData,
+            updatedAt: new Date().toISOString(),
+            totalFlightMinutes: Utils.calculateMinutes(updatedData.takeoffTime, updatedData.landingTime)
+        };
+
+        // Pass to sync engine (it uses 'put' so it will overwrite)
+        await syncEngine.addToQueue(fullRecord);
         return fullRecord;
     },
 
