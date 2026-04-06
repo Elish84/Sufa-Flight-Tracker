@@ -152,17 +152,12 @@ const App = {
                 document.getElementById('malfunctions-list').innerHTML = '';
                 App.loadTailSuggestions();
                 
-                // WhatsApp Share Option
-                setTimeout(() => {
-                    if (confirm('האם ברצונך לשתף את סיכום הטיסה ב-WhatsApp?')) {
-                        const msg = Utils.formatWhatsAppMessage(finalRecord);
-                        window.open(`https://wa.me/?text=${msg}`, '_blank');
-                    }
-                }, 500);
+                // Show Tactical Success Modal with WhatsApp option
+                App.showSuccessModal(finalRecord);
 
                 // Switch back to records after update
                 if (App.currentView === 'form' && formData.operatingUnit) {
-                    App.switchView('records');
+                    // We stay on the modal, it will handle the navigation if needed
                 }
             } catch (error) {
                 Utils.showToast('שגיאה בשמירת נתונים', 'error');
@@ -184,10 +179,15 @@ const App = {
             e.target.reset();
         });
 
-        // Records Search
+        // Records Search & Filters
         document.getElementById('record-search').addEventListener('input', (e) => {
             App.renderRecords(e.target.value);
         });
+
+        document.getElementById('record-date-from').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-date-to').addEventListener('change', () => App.renderRecords());
+
+        document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV());
 
         // Date & Tail Filters for Dashboard
         document.getElementById('dash-date-from').addEventListener('change', () => App.updateDashboard());
@@ -217,6 +217,40 @@ const App = {
     closeModal: () => {
         document.getElementById('modal-overlay').classList.add('hidden');
         document.body.style.overflow = '';
+    },
+
+    showSuccessModal: (record) => {
+        const content = `
+            <div style="text-align: center; padding: 20px 0;">
+                <div class="success-icon">
+                    <i data-lucide="check-circle" style="color: var(--accent); width: 64px; height: 64px;"></i>
+                </div>
+                <h3 style="margin: 15px 0 5px; font-size: 1.4rem;">הרישום נשמר בהצלחה!</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 25px;">מה תרצה לעשות עכשיו?</p>
+                
+                <div class="whatsapp-card" id="whatsapp-share-btn">
+                    <div class="whatsapp-icon"><i data-lucide="message-circle"></i></div>
+                    <div class="whatsapp-text">שליחת סיכום ל-WhatsApp</div>
+                </div>
+
+                <button id="success-close-btn" class="btn-secondary" style="margin-top: 20px; width: 100%;">חזרה להיסטוריית טיסות</button>
+            </div>
+        `;
+
+        App.showModal('בוצע!', content);
+        
+        // Listeners for the Success Modal
+        document.getElementById('whatsapp-share-btn').addEventListener('click', () => {
+            const msg = Utils.formatWhatsAppMessage(record);
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+            App.closeModal();
+            App.switchView('records');
+        });
+
+        document.getElementById('success-close-btn').addEventListener('click', () => {
+            App.closeModal();
+            App.switchView('records');
+        });
     },
 
     showRecordDetails: (id) => {
@@ -605,10 +639,28 @@ const App = {
         const list = document.getElementById('records-list');
         list.innerHTML = '';
         
-        const filtered = App.allRecords.filter(r => 
-            (r.operatingUnit && r.operatingUnit.includes(search)) || 
-            (r.droneTailNumber && r.droneTailNumber.includes(search))
-        );
+        const dateFrom = document.getElementById('record-date-from').value;
+        const dateTo = document.getElementById('record-date-to').value;
+        const searchText = search || document.getElementById('record-search').value;
+
+        let filtered = App.allRecords;
+
+        if (searchText) {
+            const lowSearch = searchText.toLowerCase();
+            filtered = filtered.filter(r => 
+                (r.operatingUnit && r.operatingUnit.toLowerCase().includes(lowSearch)) || 
+                (r.droneTailNumber && r.droneTailNumber.toLowerCase().includes(lowSearch))
+            );
+        }
+
+        if (dateFrom) filtered = filtered.filter(r => r.flightDate >= dateFrom);
+        if (dateTo) filtered = filtered.filter(r => r.flightDate <= dateTo);
+
+        // Sort by date/time (newest first)
+        filtered.sort((a,b) => b.flightDate.localeCompare(a.flightDate) || b.takeoffTime.localeCompare(a.takeoffTime));
+
+        // Store for export
+        App.currentFilteredRecordsForExport = filtered;
 
         if (filtered.length === 0) {
             list.innerHTML = '<div class="placeholder-text">לא נמצאו רשומות</div>';
@@ -637,6 +689,45 @@ const App = {
             list.appendChild(item);
         });
         lucide.createIcons();
+    },
+
+    currentFilteredRecordsForExport: [],
+
+    exportToCSV: () => {
+        const data = App.currentFilteredRecordsForExport;
+        if (!data || data.length === 0) {
+            Utils.showToast('אין נתונים לייצוא', 'info');
+            return;
+        }
+
+        const headers = ['תאריך', 'יחידה', 'מספר זנב', 'המראה', 'נחיתה', 'משך (דק)', 'סיבת נחיתה', 'תקלות', 'הערות'];
+        const rows = data.map(r => [
+            r.flightDate,
+            r.operatingUnit,
+            r.droneTailNumber,
+            r.takeoffTime,
+            r.landingTime,
+            r.totalFlightMinutes,
+            r.landingReason === 'initiated' ? 'יזומה' : 'תקלה',
+            r.malfunctions ? r.malfunctions.map(m => m.type).join(', ') : '',
+            (r.notes || '').replace(/\n/g, ' ')
+        ]);
+
+        const csvContent = [headers, ...rows]
+            .map(e => e.join(","))
+            .join("\n");
+
+        // Use BOM for Hebrew support in Excel
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `sufa_flights_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        Utils.showToast('הקובץ יוצא בהצלחה', 'success');
     },
 
     confirmDeleteRecord: async (id) => {

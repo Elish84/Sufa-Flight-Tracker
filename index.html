@@ -181,8 +181,24 @@
                 <!-- Records View -->
                 <section id="records-view" class="sub-view hidden">
                     <div class="records-header">
-                        <div class="input-group">
-                            <input type="text" id="record-search" placeholder="חפש לפי יחידה או זנב...">
+                        <div class="records-filters">
+                            <div class="input-group search-box">
+                                <i data-lucide="search" class="search-icon"></i>
+                                <input type="text" id="record-search" placeholder="חיפוש לפי זנב או יחידה...">
+                            </div>
+                            <div class="input-row">
+                                <div class="filter-item">
+                                    <label>מפורמט:</label>
+                                    <input type="date" id="record-date-from">
+                                </div>
+                                <div class="filter-item">
+                                    <label>עד:</label>
+                                    <input type="date" id="record-date-to">
+                                </div>
+                            </div>
+                            <button id="export-csv-btn" class="btn-secondary" style="width: 100%; margin-top: 10px;">
+                                <i data-lucide="download"></i> ייצוא ל-CSV
+                            </button>
                         </div>
                     </div>
                     <div id="records-list" class="records-list">

@@ -638,6 +638,105 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--primary-color);
 }
 
+/* Success Modal & WhatsApp button */
+.success-icon {
+    margin-bottom: 20px;
+    animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.whatsapp-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #10b981; /* WhatsApp Green */
+    color: white;
+    padding: 18px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    margin: 15px 0;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.whatsapp-card:active {
+    transform: scale(0.97);
+    background: #0d9668;
+}
+
+.whatsapp-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Records View Specifics */
+.records-header {
+    background: var(--card-bg);
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.records-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.records-filters .input-row {
+    display: flex;
+    gap: 10px;
+}
+
+.records-filters .filter-item {
+    flex: 1;
+}
+
+.records-filters label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.records-filters input[type="date"] {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+#export-csv-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+}
+
+#export-csv-btn:active {
+    background: var(--border);
+}
+
+.records-list {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
