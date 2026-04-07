@@ -128,6 +128,7 @@ const App = {
             const formData = {
                 operatingUnit: document.getElementById('operating-unit').value,
                 droneTailNumber: document.getElementById('tail-number').value,
+                operatorName: document.getElementById('operator-name').value || '',
                 flightDate: document.getElementById('flight-date').value,
                 takeoffTime: document.getElementById('takeoff-time').value,
                 landingTime: document.getElementById('landing-time').value,
@@ -287,6 +288,7 @@ const App = {
 
         const content = `
             <div class="detail-grid">
+                <span class="detail-label">מטיס:</span><span class="detail-value">${record.operatorName || 'לא צוין'}</span>
                 <span class="detail-label">מספר זנב:</span><span class="detail-value">${record.droneTailNumber}</span>
                 <span class="detail-label">יחידה:</span><span class="detail-value">${record.operatingUnit}</span>
                 <span class="detail-label">תאריך:</span><span class="detail-value">${date}</span>
@@ -681,6 +683,7 @@ const App = {
         // Fill basic fields
         document.getElementById('operating-unit').value = record.operatingUnit;
         document.getElementById('tail-number').value = record.droneTailNumber;
+        document.getElementById('operator-name').value = record.operatorName || '';
         document.getElementById('flight-date').value = record.flightDate;
         document.getElementById('takeoff-time').value = record.takeoffTime;
         document.getElementById('landing-time').value = record.landingTime;
@@ -721,7 +724,8 @@ const App = {
             const lowSearch = searchText.toLowerCase();
             filtered = filtered.filter(r => 
                 (r.operatingUnit && r.operatingUnit.toLowerCase().includes(lowSearch)) || 
-                (r.droneTailNumber && r.droneTailNumber.toLowerCase().includes(lowSearch))
+                (r.droneTailNumber && r.droneTailNumber.toLowerCase().includes(lowSearch)) ||
+                (r.operatorName && r.operatorName.toLowerCase().includes(lowSearch))
             );
         }
 
@@ -744,7 +748,8 @@ const App = {
             const hasCritical = r.malfunctions && r.malfunctions.some(m => m.severity === 'קריטי');
             
             const malfIcon = hasCritical ? '<i data-lucide="flag" class="color-critical"></i>' : (hasMalfunctions ? ' ⚠️' : '');
-            
+            const operatorStr = r.operatorName ? ` - ${r.operatorName}` : '';
+
             const item = document.createElement('div');
             item.className = 'record-item';
             item.onclick = (e) => {
@@ -753,7 +758,7 @@ const App = {
             };
             item.innerHTML = `
                 <div class="record-info">
-                    <span class="record-title">${r.droneTailNumber} (${r.operatingUnit})</span>
+                    <span class="record-title">${r.droneTailNumber} (${r.operatingUnit})${operatorStr}</span>
                     <span class="record-subtitle">${Utils.formatDate(r.flightDate)} | ${r.takeoffTime}-${r.landingTime} ${malfIcon}</span>
                 </div>
                 <div class="record-minutes">${r.totalFlightMinutes} דק'</div>
@@ -776,9 +781,10 @@ const App = {
             return;
         }
 
-        const headers = ['תאריך', 'יחידה', 'מספר זנב', 'המראה', 'נחיתה', 'משך (דק)', 'סיבת נחיתה', 'תקלות', 'הערות'];
+        const headers = ['תאריך', 'מטיס', 'יחידה', 'מספר זנב', 'המראה', 'נחיתה', 'משך (דק)', 'סיבת נחיתה', 'תקלות', 'הערות'];
         const rows = data.map(r => [
             r.flightDate,
+            r.operatorName || '',
             r.operatingUnit,
             r.droneTailNumber,
             r.takeoffTime,

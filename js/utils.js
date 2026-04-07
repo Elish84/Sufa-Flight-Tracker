@@ -64,10 +64,11 @@ const Utils = {
     formatWhatsAppMessage: (record) => {
         const date = Utils.formatDate(record.flightDate);
         const reason = record.landingReason === 'initiated' ? 'יזומה 🟢' : 'בגלל תקלה 🔴';
+        const operatorText = record.operatorName ? `👤 *מטיס:* ${record.operatorName}\n` : '';
         
         let malfText = '';
         if (record.malfunctions && record.malfunctions.length > 0) {
-            malfText = '\n⚠️ *תקלות:* ' + record.malfunctions.map(m => m.type).join(', ');
+            malfText = '\n⚠️ *תקלות:* ' + record.malfunctions.map(m => `${m.type} (${m.severity || 'לא צוין'})`).join(', ');
         }
 
         const notesText = record.notes ? `\n📝 *הערות:* ${record.notes}` : '';
@@ -76,6 +77,7 @@ const Utils = {
             `🚀 *דיווח טיסה חדש - סופה*\n\n` +
             `📅 *תאריך:* ${date}\n` +
             `🚁 *מספר זנב:* ${record.droneTailNumber}\n` +
+            `${operatorText}` +
             `👥 *יחידה:* ${record.operatingUnit}\n` +
             `⏱️ *זמן:* ${record.takeoffTime} - ${record.landingTime} (${record.totalFlightMinutes} דק')\n` +
             `🛬 *נחיתה:* ${reason}` +
