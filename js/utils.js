@@ -79,7 +79,7 @@ const Utils = {
             `🚁 *מספר זנב:* ${record.droneTailNumber}\n` +
             `${operatorText}` +
             `👥 *יחידה:* ${record.operatingUnit}\n` +
-            `⏱️ *זמן:* ${record.takeoffTime} - ${record.landingTime} (${record.totalFlightMinutes} דק')\n` +
+            `⏱️ *זמן:* ${record.takeoffTime} - ${record.landingTime} (${Utils.formatDuration(record.totalFlightMinutes)} ש')\n` +
             `🛬 *נחיתה:* ${reason}` +
             `${malfText}` +
             `${notesText}\n\n` +

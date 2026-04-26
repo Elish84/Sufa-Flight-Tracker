@@ -103,7 +103,7 @@ const App = {
 
         const updateCalc = () => {
             const mins = Utils.calculateMinutes(takeoffInput.value, landingInput.value);
-            calcDisplay.innerText = mins;
+            calcDisplay.innerText = Utils.formatDuration(mins);
         };
 
         takeoffInput.addEventListener('change', updateCalc);
@@ -294,7 +294,7 @@ const App = {
                 <span class="detail-label">תאריך:</span><span class="detail-value">${date}</span>
                 <span class="detail-label">זמן המראה:</span><span class="detail-value">${record.takeoffTime}</span>
                 <span class="detail-label">זמן נחיתה:</span><span class="detail-value">${record.landingTime}</span>
-                <span class="detail-label">משך טיסה:</span><span class="detail-value">${record.totalFlightMinutes} דקות</span>
+                <span class="detail-label">משך טיסה:</span><span class="detail-value">${Utils.formatDuration(record.totalFlightMinutes)} שעות</span>
                 <span class="detail-label">סיבת נחיתה:</span><span class="detail-value">${record.landingReason === 'initiated' ? 'יזומה 🟢' : 'בגלל תקלה 🔴'}</span>
             </div>
             <div class="detail-section">
@@ -515,7 +515,7 @@ const App = {
             else if (r.landingReason === 'malfunction') totalMalfunctions += 1;
         });
 
-        document.getElementById('stat-total-hours').innerText = (totalMins / 60).toFixed(1);
+        document.getElementById('stat-total-hours').innerText = Utils.formatDuration(totalMins);
         document.getElementById('stat-total-flights').innerText = filtered.length;
         document.getElementById('stat-malfunctions').innerText = totalMalfunctions;
 
@@ -705,7 +705,7 @@ const App = {
         }
 
         // Recalculate duration display
-        document.getElementById('calc-total-time').innerText = record.totalFlightMinutes || 0;
+        document.getElementById('calc-total-time').innerText = Utils.formatDuration(record.totalFlightMinutes || 0);
         
         Utils.showToast('עריכת רישום...', 'info');
     },
@@ -758,10 +758,10 @@ const App = {
             };
             item.innerHTML = `
                 <div class="record-info">
-                    <span class="record-title">${r.droneTailNumber} (${r.operatingUnit})${operatorStr}</span>
+                    <span class="record-title">🚁 ${r.droneTailNumber} 🪖 ${r.operatingUnit}</span>
                     <span class="record-subtitle">${Utils.formatDate(r.flightDate)} | ${r.takeoffTime}-${r.landingTime} ${malfIcon}</span>
                 </div>
-                <div class="record-minutes">${r.totalFlightMinutes} דק'</div>
+                <div class="record-minutes">${Utils.formatDuration(r.totalFlightMinutes)} ש'</div>
                 <div class="record-actions">
                     <button class="icon-btn" onclick="App.editRecord('${r.id}')"><i data-lucide="edit-3"></i></button>
                     <button class="icon-btn danger" onclick="App.confirmDeleteRecord('${r.id}')"><i data-lucide="trash-2"></i></button>
@@ -781,7 +781,7 @@ const App = {
             return;
         }
 
-        const headers = ['תאריך', 'מטיס', 'יחידה', 'מספר זנב', 'המראה', 'נחיתה', 'משך (דק)', 'סיבת נחיתה', 'תקלות', 'הערות'];
+        const headers = ['תאריך', 'מטיס', 'יחידה', 'מספר זנב', 'המראה', 'נחיתה', 'משך (שעות)', 'סיבת נחיתה', 'תקלות', 'הערות'];
         const rows = data.map(r => [
             r.flightDate,
             r.operatorName || '',
@@ -789,7 +789,7 @@ const App = {
             r.droneTailNumber,
             r.takeoffTime,
             r.landingTime,
-            r.totalFlightMinutes,
+            Utils.formatDuration(r.totalFlightMinutes),
             r.landingReason === 'initiated' ? 'יזומה' : 'תקלה',
             r.malfunctions ? r.malfunctions.map(m => `${m.type} (${m.severity || 'לא צוין'})`).join('; ') : '',
             (r.notes || '').replace(/\n/g, ' ')
