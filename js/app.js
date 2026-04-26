@@ -754,11 +754,11 @@ const App = {
             item.className = 'record-item';
             item.onclick = (e) => {
                 if (e.target.closest('.record-actions')) return;
-                App.showRecordDetails(r.id);
+                App.editRecord(r.id);
             };
             item.innerHTML = `
                 <div class="record-info">
-                    <span class="record-title">🚁 ${r.droneTailNumber} 🪖 ${r.operatingUnit}</span>
+                    <span class="record-title">🚁 ${r.droneTailNumber} &nbsp;|&nbsp; 🪖 ${r.operatingUnit}</span>
                     <span class="record-subtitle">${Utils.formatDate(r.flightDate)} | ${r.takeoffTime}-${r.landingTime} ${malfIcon}</span>
                 </div>
                 <div class="record-minutes">${Utils.formatDuration(r.totalFlightMinutes)} ש'</div>
