@@ -205,9 +205,14 @@
                                     <input type="date" id="record-date-to">
                                 </div>
                             </div>
-                            <button id="export-csv-btn" class="btn-secondary" style="width: 100%; margin-top: 10px;">
-                                <i data-lucide="download"></i> ייצוא ל-CSV
-                            </button>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button id="export-csv-btn" class="btn-secondary" style="flex: 1;">
+                                    <i data-lucide="download"></i> ייצוא מסונן
+                                </button>
+                                <button id="export-all-csv-btn" class="btn-secondary" style="flex: 1;">
+                                    <i data-lucide="download"></i> ייצוא הכל
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div id="records-list" class="records-list">

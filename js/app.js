@@ -204,7 +204,8 @@ const App = {
         document.getElementById('record-date-from').addEventListener('change', () => App.renderRecords());
         document.getElementById('record-date-to').addEventListener('change', () => App.renderRecords());
 
-        document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV());
+        document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV(false));
+        document.getElementById('export-all-csv-btn').addEventListener('click', () => App.exportToCSV(true));
 
         // Date & Tail Filters for Dashboard
         document.getElementById('dash-date-from').addEventListener('change', () => App.updateDashboard());
@@ -774,8 +775,8 @@ const App = {
 
     currentFilteredRecordsForExport: [],
 
-    exportToCSV: () => {
-        const data = App.currentFilteredRecordsForExport;
+    exportToCSV: (exportAll = false) => {
+        const data = exportAll ? App.allRecords : App.currentFilteredRecordsForExport;
         if (!data || data.length === 0) {
             Utils.showToast('אין נתונים לייצוא', 'info');
             return;

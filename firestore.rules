@@ -1,49 +1,188 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Check if user is authenticated
-    function isAuthenticated() {
+
+    // ===== פונקציות עזר =====
+    function signedIn() {
       return request.auth != null;
     }
 
-    // Check if user is an admin
+    function isDivision() {
+      return signedIn() && request.auth.token.email == 'shomron@gmail.com';
+    }
+
     function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Flight Logs Rules
-    match /flightLogs/{flightId} {
-      allow read: if isAuthenticated();
-      // Users can only create their own logs or if they're members of units (simplified for now as per reqs)
-      allow create: if isAuthenticated();
-      // Editing/Deleting requires either being the creator or an admin
-      allow update, delete: if isAuthenticated();
+    function isManager() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/manager/$(request.auth.uid));
     }
 
-    // Units Rules
-    match /units/{unitId} {
-      allow read: if isAuthenticated();
+    function isDeveloper() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/developers/$(request.auth.uid));
+    }
+
+    // פונקציה לבדיקה האם המשתמש משויך לתעסוקה ספציפית
+    function isAssignedTo(depId) {
+      return isAdmin() && 
+        get(/databases/$(database)/documents/deploymentsMap/$(request.auth.token.email.lower())).data.deployment == depId;
+    }
+
+    // =====================================================
+    // ============ PROJECT: DEPLOYMENTS (V5) ==============
+    // =====================================================
+    
+    // חוק הליבה: הפרדה מוחלטת לפי תעסוקה
+    match /deployments/{depId}/reviews/{docId} {
+      allow create: if isAdmin();
+      allow read: if isDivision() || isAssignedTo(depId);
+      allow update, delete: if isAdmin() && isAssignedTo(depId);
+    }
+
+    // תמיכה בשליפה רוחבית (חטיבה / AI)
+    match /{path=**}/reviews/{docId} {
+      allow read: if isDivision() || isAdmin();
+    }
+
+    // =====================================================
+    // ============ PROJECT: SECTOR EVENTS =================
+    // =====================================================
+    match /sectorEvents/{docId} {
+      allow create: if true;
+      allow read: if signedIn();
+      allow update, delete: if isAdmin() || isManager();
+    }
+
+    match /roles/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isManager();
+    }
+
+    match /eventTypes/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isManager();
+    }
+
+    // =====================================================
+    // ================= PROJECT: REVIEWS ==================
+    // =====================================================
+    match /reviews/{docId} {
+      allow create: if signedIn();
+      allow read: if isAdmin() || isDivision();
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================
+    // ============== PROJECT: HOUSE SCANS =================
+    // =====================================================
+    match /houseScans/{docId} {
+      allow create: if true;
+      allow read: if isAdmin() || isDivision();
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================
+    // =================== MAP PINS ========================
+    // =====================================================
+    match /mapPins/{docId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================
+    // =================== PLACES ==========================
+    // =====================================================
+    match /places/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // =====================================================
+    // =================== SECTORS =========================
+    // =====================================================
+    match /sectors/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // =====================================================
+    // ================= TZAMM CALENDAR ====================
+    // =====================================================
+    match /tzammCalendar/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+    }
+
+    // =====================================================
+    // =================== ADMINS ==========================
+    // =====================================================
+    match /admins/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /deploymentsMap/{docId} {
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
 
-    // Malfunction Types Rules
-    match /malfunctionTypes/{typeId} {
-      allow read: if isAuthenticated();
+    // =====================================================
+    // ================== MANAGER =========================
+    // =====================================================
+    match /manager/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow update, delete: if isManager();
+    }
+
+    // =====================================================
+    // ================= DEVELOPERS =======================
+    // =====================================================
+    match /developers/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow update, delete: if isDeveloper();
+    }
+
+    // =====================================================
+    // =================== SETTINGS ========================
+    // =====================================================
+    match /settings/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isDeveloper();
+    }
+
+    // =====================================================
+    // ============ PROJECT: OBSERVATION OWL ===============
+    // =====================================================
+    match /formTypes/{docId} {
+      allow read: if true; // פתוח לכולם למילוי הטופס
       allow write: if isAdmin();
     }
 
-    // Malfunction Severities Rules
-    match /malfunctionSeverities/{sevId} {
-      allow read: if isAuthenticated();
+    match /observationPosts/{docId} {
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Admins Collection Rules
-    match /admins/{adminId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Only manageable via Firebase Console for security
+    match /frameworks/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /observationTrainingReports/{docId} {
+      allow create: if true; // פתוח לכולם לשלוח תרגול
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
