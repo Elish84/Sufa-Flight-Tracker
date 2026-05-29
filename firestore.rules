@@ -181,6 +181,28 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // =====================================================
+    // ============ PROJECT: FLIGHT TRACKER ================
+    // =====================================================
+    match /flightLogs/{docId} {
+      allow create, read, update, delete: if signedIn();
+    }
+
+    match /units/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    match /malfunctionTypes/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    match /malfunctionSeverities/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
