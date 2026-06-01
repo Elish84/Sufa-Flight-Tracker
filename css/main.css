@@ -72,9 +72,9 @@ body {
 
 /* Layout */
 header {
-    height: var(--header-height);
+    min-height: var(--header-height);
     background: var(--card-bg);
-    padding: 0 20px;
+    padding: max(env(safe-area-inset-top), 20px) 20px 15px 20px;
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--border);
