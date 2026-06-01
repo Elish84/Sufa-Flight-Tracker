@@ -201,8 +201,7 @@ const App = {
             App.renderRecords(e.target.value);
         });
 
-        document.getElementById('record-date-from').addEventListener('change', () => App.renderRecords());
-        document.getElementById('record-date-to').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-time-period').addEventListener('change', () => App.renderRecords());
         document.getElementById('record-severity-filter').addEventListener('change', () => App.renderRecords());
 
         document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV(false));
@@ -210,8 +209,7 @@ const App = {
         document.getElementById('export-whatsapp-btn').addEventListener('click', () => App.exportSummaryToWhatsApp());
 
         // Date & Tail Filters for Dashboard
-        document.getElementById('dash-date-from').addEventListener('change', () => App.updateDashboard());
-        document.getElementById('dash-date-to').addEventListener('change', () => App.updateDashboard());
+        document.getElementById('dash-time-period').addEventListener('change', () => App.updateDashboard());
         document.getElementById('dash-tail-filter').addEventListener('change', () => App.updateDashboard());
 
         // Global Modal Close
@@ -483,9 +481,17 @@ const App = {
         lucide.createIcons();
     },
 
+    getMinDateFromPeriod: (periodValue) => {
+        if (periodValue === 'all') return null;
+        const days = parseInt(periodValue);
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d.toISOString().split('T')[0];
+    },
+
     updateDashboard: () => {
-        const dateFrom = document.getElementById('dash-date-from').value;
-        const dateTo = document.getElementById('dash-date-to').value;
+        const period = document.getElementById('dash-time-period').value;
+        const minDateStr = App.getMinDateFromPeriod(period);
         const tailFilter = document.getElementById('dash-tail-filter');
         const selectedTail = tailFilter.value;
         
@@ -502,8 +508,7 @@ const App = {
         });
 
         let filtered = App.allRecords;
-        if (dateFrom) filtered = filtered.filter(r => r.flightDate >= dateFrom);
-        if (dateTo) filtered = filtered.filter(r => r.flightDate <= dateTo);
+        if (minDateStr) filtered = filtered.filter(r => r.flightDate >= minDateStr);
         if (selectedTail) filtered = filtered.filter(r => r.droneTailNumber === selectedTail);
 
         App.currentFilteredRecords = filtered;
@@ -634,13 +639,35 @@ const App = {
             }
         });
 
+        const colors = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6', '#14b8a6', '#64748b'];
+        
+        const severityOrder = App.malfunctionSeverities.map(s => s.name);
+        const sortedSevLabels = [];
+        const sortedSevData = [];
+        const sortedSevColors = [];
+        
+        severityOrder.forEach((sevName, index) => {
+            if (sevData[sevName]) {
+                sortedSevLabels.push(sevName);
+                sortedSevData.push(sevData[sevName]);
+                sortedSevColors.push(colors[index % colors.length]);
+                delete sevData[sevName];
+            }
+        });
+        
+        Object.keys(sevData).forEach(leftover => {
+            sortedSevLabels.push(leftover);
+            sortedSevData.push(sevData[leftover]);
+            sortedSevColors.push('#94a3b8'); 
+        });
+
         const ctxSev = document.getElementById('severity-chart').getContext('2d');
         App.charts.severity = new Chart(ctxSev, {
             type: 'pie',
             plugins: barPlugins,
             data: {
-                labels: Object.keys(sevData),
-                datasets: [{ data: Object.values(sevData), backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6'] }]
+                labels: sortedSevLabels,
+                datasets: [{ data: sortedSevData, backgroundColor: sortedSevColors }]
             },
             options: { 
                 responsive: true, 
@@ -752,8 +779,8 @@ const App = {
         const list = document.getElementById('records-list');
         list.innerHTML = '';
         
-        const dateFrom = document.getElementById('record-date-from').value;
-        const dateTo = document.getElementById('record-date-to').value;
+        const period = document.getElementById('record-time-period').value;
+        const minDateStr = App.getMinDateFromPeriod(period);
         const severityFilterElement = document.getElementById('record-severity-filter');
         const selectedSeverity = severityFilterElement.value;
         const searchText = search || document.getElementById('record-search').value;
@@ -780,8 +807,7 @@ const App = {
             );
         }
 
-        if (dateFrom) filtered = filtered.filter(r => r.flightDate >= dateFrom);
-        if (dateTo) filtered = filtered.filter(r => r.flightDate <= dateTo);
+        if (minDateStr) filtered = filtered.filter(r => r.flightDate >= minDateStr);
         if (selectedSeverity) {
             filtered = filtered.filter(r => {
                 if (r.malfunctions && r.malfunctions.length > 0) {
