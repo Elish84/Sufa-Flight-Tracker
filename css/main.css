@@ -725,11 +725,13 @@ input:focus, select:focus, textarea:focus {
 
 .records-filters .input-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
 .records-filters .filter-item {
-    flex: 1;
+    flex: 1 1 45%;
+    min-width: 120px;
 }
 
 .records-filters label {
