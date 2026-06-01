@@ -182,7 +182,36 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // ============ PROJECT: FLIGHT TRACKER ================
+    // ============ PROJECT: MAGNIX FLIGHT TRACKER =========
+    // =====================================================
+    match /magnix_flightLogs/{docId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if signedIn();
+    }
+    
+    match /magnix_units/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /magnix_malfunctionTypes/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /magnix_malfunctionSeverities/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /magnix_admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
+
+    // =====================================================
+    // ============ PROJECT: SUFA FLIGHT TRACKER ===========
     // =====================================================
     match /flightLogs/{docId} {
       allow create, read, update, delete: if signedIn();
@@ -205,6 +234,35 @@ service cloud.firestore {
 
     match /{document=**} {
       allow read, write: if false;
+    }
+       // =====================================================
+    // ============ PROJECT: ATP SUFA SYSTEM ================
+    // =====================================================
+    
+    // פונקציות עזר עבור ATP (אם הן לא מוגדרות כבר למעלה)
+    function isOwner() {
+      return signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+    function isCreatingOwnRecord() {
+      return signedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+    match /systemTypes/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /testDefinitions/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /tests/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /atpRecords/{docId} {
+      allow create: if isCreatingOwnRecord() || isAdmin();
+      allow read: if isAdmin() || isOwner();
+      allow update: if isAdmin() || (isOwner() && request.resource.data.ownerUid == resource.data.ownerUid);
+      allow delete: if isAdmin() || isOwner();
     }
   }
 }
