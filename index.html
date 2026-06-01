@@ -185,6 +185,10 @@
                         <h3>פילוח סוגי תקלות</h3>
                         <canvas id="malfunction-chart"></canvas>
                     </div>
+                    <div class="chart-container fixed-height">
+                        <h3>תקלות לפי רמת חומרה</h3>
+                        <canvas id="severity-chart"></canvas>
+                    </div>
                 </section>
 
                 <!-- Records View -->
@@ -204,6 +208,12 @@
                                     <label>עד:</label>
                                     <input type="date" id="record-date-to">
                                 </div>
+                                <div class="filter-item">
+                                    <label>חומרה:</label>
+                                    <select id="record-severity-filter" style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--border);">
+                                        <option value="">הכל</option>
+                                    </select>
+                                </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
                                 <button id="export-csv-btn" class="btn-secondary" style="flex: 1;">
@@ -211,6 +221,11 @@
                                 </button>
                                 <button id="export-all-csv-btn" class="btn-secondary" style="flex: 1;">
                                     <i data-lucide="download"></i> ייצוא הכל
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button id="export-whatsapp-btn" class="btn-primary" style="flex: 1; background-color: #10b981; border-color: #10b981;">
+                                    <i data-lucide="message-circle"></i> סיכום מנהלים
                                 </button>
                             </div>
                         </div>

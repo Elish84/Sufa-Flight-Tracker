@@ -203,9 +203,11 @@ const App = {
 
         document.getElementById('record-date-from').addEventListener('change', () => App.renderRecords());
         document.getElementById('record-date-to').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-severity-filter').addEventListener('change', () => App.renderRecords());
 
         document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV(false));
         document.getElementById('export-all-csv-btn').addEventListener('click', () => App.exportToCSV(true));
+        document.getElementById('export-whatsapp-btn').addEventListener('click', () => App.exportSummaryToWhatsApp());
 
         // Date & Tail Filters for Dashboard
         document.getElementById('dash-date-from').addEventListener('change', () => App.updateDashboard());
@@ -531,6 +533,7 @@ const App = {
         const unitData = {};
         const droneData = {};
         const malfData = {};
+        const sevData = {};
 
         data.forEach(r => {
             unitData[r.operatingUnit] = (unitData[r.operatingUnit] || 0) + (r.totalFlightMinutes / 60);
@@ -539,16 +542,19 @@ const App = {
             if (r.malfunctions) {
                 r.malfunctions.forEach(m => {
                     malfData[m.type] = (malfData[m.type] || 0) + 1;
+                    sevData[m.severity || 'לא צוין'] = (sevData[m.severity || 'לא צוין'] || 0) + 1;
                 });
             } else if (r.landingReason === 'malfunction') {
                 const type = r.malfunctionType || 'אחר';
                 malfData[type] = (malfData[type] || 0) + 1;
+                sevData['לא צוין'] = (sevData['לא צוין'] || 0) + 1;
             }
         });
 
         if (App.charts.unit) App.charts.unit.destroy();
         if (App.charts.drone) App.charts.drone.destroy();
         if (App.charts.malf) App.charts.malf.destroy();
+        if (App.charts.severity) App.charts.severity.destroy();
 
         const commonOptions = {
             responsive: true,
@@ -604,6 +610,37 @@ const App = {
             data: {
                 labels: Object.keys(malfData),
                 datasets: [{ data: Object.values(malfData), backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'] }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                animation: { duration: 0 },
+                plugins: { 
+                    legend: { position: 'bottom', labels: { color: '#f8fafc', boxWidth: 12, padding: 10, font: { size: 11 } } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: (val, context) => {
+                            const label = context.chart.data.labels[context.dataIndex];
+                            return `${label}\n${val}`;
+                        },
+                        anchor: 'center',
+                        align: 'center',
+                        textAlign: 'center',
+                        textShadowBlur: 4,
+                        textShadowColor: 'rgba(0,0,0,0.8)'
+                    }
+                } 
+            }
+        });
+
+        const ctxSev = document.getElementById('severity-chart').getContext('2d');
+        App.charts.severity = new Chart(ctxSev, {
+            type: 'pie',
+            plugins: barPlugins,
+            data: {
+                labels: Object.keys(sevData),
+                datasets: [{ data: Object.values(sevData), backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6'] }]
             },
             options: { 
                 responsive: true, 
@@ -717,7 +754,20 @@ const App = {
         
         const dateFrom = document.getElementById('record-date-from').value;
         const dateTo = document.getElementById('record-date-to').value;
+        const severityFilterElement = document.getElementById('record-severity-filter');
+        const selectedSeverity = severityFilterElement.value;
         const searchText = search || document.getElementById('record-search').value;
+
+        // Populate Severity Filter if not already
+        if (severityFilterElement.options.length <= 1 && App.malfunctionSeverities.length > 0) {
+            App.malfunctionSeverities.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.innerText = s.name;
+                severityFilterElement.appendChild(opt);
+            });
+            severityFilterElement.value = selectedSeverity;
+        }
 
         let filtered = App.allRecords;
 
@@ -732,6 +782,18 @@ const App = {
 
         if (dateFrom) filtered = filtered.filter(r => r.flightDate >= dateFrom);
         if (dateTo) filtered = filtered.filter(r => r.flightDate <= dateTo);
+        if (selectedSeverity) {
+            filtered = filtered.filter(r => {
+                if (r.malfunctions && r.malfunctions.length > 0) {
+                    return r.malfunctions.some(m => m.severity === selectedSeverity);
+                }
+                // Special case: if we want to filter by "לא צוין" for old malfunctions
+                if (selectedSeverity === 'לא צוין' && r.landingReason === 'malfunction' && (!r.malfunctions || r.malfunctions.length === 0)) {
+                    return true;
+                }
+                return false;
+            });
+        }
 
         // Sort by date/time (newest first)
         filtered.sort((a,b) => b.flightDate.localeCompare(a.flightDate) || b.takeoffTime.localeCompare(a.takeoffTime));
@@ -811,6 +873,69 @@ const App = {
         document.body.removeChild(link);
         
         Utils.showToast('הקובץ יוצא בהצלחה', 'success');
+    },
+
+    exportSummaryToWhatsApp: () => {
+        const data = App.currentFilteredRecordsForExport;
+        if (!data || data.length === 0) {
+            Utils.showToast('אין נתונים לסיכום', 'info');
+            return;
+        }
+
+        // 1. Summary period
+        const dates = data.map(r => r.flightDate).sort();
+        const minDate = Utils.formatDate(dates[0]);
+        const maxDate = Utils.formatDate(dates[dates.length - 1]);
+        const periodStr = (minDate === maxDate) ? minDate : `${minDate} - ${maxDate}`;
+
+        // 2. Total accumulated flight hours
+        const totalMinutes = data.reduce((acc, r) => acc + (r.totalFlightMinutes || 0), 0);
+        const totalHours = Utils.formatDuration(totalMinutes);
+
+        // 3. Malfunction summary by severity
+        const sevCounts = {};
+        data.forEach(r => {
+            if (r.malfunctions) {
+                r.malfunctions.forEach(m => {
+                    sevCounts[m.severity || 'לא צוין'] = (sevCounts[m.severity || 'לא צוין'] || 0) + 1;
+                });
+            } else if (r.landingReason === 'malfunction') {
+                sevCounts['לא צוין'] = (sevCounts['לא צוין'] || 0) + 1;
+            }
+        });
+        
+        const sevListHtml = Object.entries(sevCounts).map(([sev, count]) => `▪️ ${sev}: ${count}`).join('%0A') || 'אין תקלות';
+
+        // 4. Total flight hours without malfunctions
+        const noMalfData = data.filter(r => (!r.malfunctions || r.malfunctions.length === 0) && r.landingReason !== 'malfunction');
+        const noMalfMinutes = noMalfData.reduce((acc, r) => acc + (r.totalFlightMinutes || 0), 0);
+        const noMalfHours = Utils.formatDuration(noMalfMinutes);
+
+        // 5. Leading unit
+        const unitData = {};
+        data.forEach(r => {
+            unitData[r.operatingUnit] = (unitData[r.operatingUnit] || 0) + (r.totalFlightMinutes || 0);
+        });
+        
+        let leadingUnit = 'אין נתונים';
+        let maxMins = -1;
+        Object.entries(unitData).forEach(([u, mins]) => {
+            if (mins > maxMins) {
+                maxMins = mins;
+                leadingUnit = u;
+            }
+        });
+        const leadingUnitHours = Utils.formatDuration(maxMins > 0 ? maxMins : 0);
+
+        const msg = `*סיכום מנהלים - סופה* 🦅%0A%0A` +
+                    `📅 *תקופת סיכום:* ${periodStr}%0A` +
+                    `⏱️ *סה"כ שעות טיסה:* ${totalHours}%0A` +
+                    `✈️ *שעות טיסה ללא תקלה:* ${noMalfHours}%0A` +
+                    `🏆 *יחידה מובילה:* ${leadingUnit} (${leadingUnitHours} שעות)%0A%0A` +
+                    `*פילוח תקלות (מספרי):*%0A` +
+                    `${sevListHtml}`;
+
+        window.open(`https://wa.me/?text=${msg}`, '_blank');
     },
 
     confirmDeleteRecord: async (id) => {
