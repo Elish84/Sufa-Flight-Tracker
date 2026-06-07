@@ -232,37 +232,9 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin() || isManager();
     }
 
+    // תמיד בסוף: חסימה לכל מה שלא הוגדר למעלה
     match /{document=**} {
       allow read, write: if false;
-    }
-       // =====================================================
-    // ============ PROJECT: ATP SUFA SYSTEM ================
-    // =====================================================
-    
-    // פונקציות עזר עבור ATP (אם הן לא מוגדרות כבר למעלה)
-    function isOwner() {
-      return signedIn() && resource.data.ownerUid == request.auth.uid;
-    }
-    function isCreatingOwnRecord() {
-      return signedIn() && request.resource.data.ownerUid == request.auth.uid;
-    }
-    match /systemTypes/{docId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-    match /testDefinitions/{docId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-    match /tests/{docId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-    match /atpRecords/{docId} {
-      allow create: if isCreatingOwnRecord() || isAdmin();
-      allow read: if isAdmin() || isOwner();
-      allow update: if isAdmin() || (isOwner() && request.resource.data.ownerUid == resource.data.ownerUid);
-      allow delete: if isAdmin() || isOwner();
     }
   }
 }
