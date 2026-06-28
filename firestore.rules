@@ -7,6 +7,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function isDivision() {
       return signedIn() && request.auth.token.email == 'shomron@gmail.com';
     }
@@ -26,24 +30,29 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/developers/$(request.auth.uid));
     }
 
-    // פונקציה לבדיקה האם המשתמש משויך לתעסוקה ספציפית
     function isAssignedTo(depId) {
       return isAdmin() && 
         get(/databases/$(database)/documents/deploymentsMap/$(request.auth.token.email.lower())).data.deployment == depId;
+    }
+
+    function isOwner() {
+      return signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    function isCreatingOwnRecord() {
+      return signedIn() && request.resource.data.ownerUid == request.auth.uid;
     }
 
     // =====================================================
     // ============ PROJECT: DEPLOYMENTS (V5) ==============
     // =====================================================
     
-    // חוק הליבה: הפרדה מוחלטת לפי תעסוקה
     match /deployments/{depId}/reviews/{docId} {
       allow create: if isAdmin();
       allow read: if isDivision() || isAssignedTo(depId);
       allow update, delete: if isAdmin() && isAssignedTo(depId);
     }
 
-    // תמיכה בשליפה רוחבית (חטיבה / AI)
     match /{path=**}/reviews/{docId} {
       allow read: if isDivision() || isAdmin();
     }
@@ -122,8 +131,8 @@ service cloud.firestore {
     // =================== ADMINS ==========================
     // =====================================================
     match /admins/{uid} {
+      allow read: if isAuthenticated();
       allow create: if signedIn() && request.auth.uid == uid;
-      allow read: if signedIn() && request.auth.uid == uid;
       allow update, delete: if isAdmin();
     }
 
@@ -162,7 +171,7 @@ service cloud.firestore {
     // ============ PROJECT: OBSERVATION OWL ===============
     // =====================================================
     match /formTypes/{docId} {
-      allow read: if true; // פתוח לכולם למילוי הטופס
+      allow read: if true; 
       allow write: if isAdmin();
     }
 
@@ -177,7 +186,7 @@ service cloud.firestore {
     }
 
     match /observationTrainingReports/{docId} {
-      allow create: if true; // פתוח לכולם לשלוח תרגול
+      allow create: if true; 
       allow read, update, delete: if isAdmin();
     }
 
@@ -211,28 +220,70 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // ============ PROJECT: SUFA FLIGHT TRACKER ===========
+    // ============ ORIGINAL SUFA APP RULES ================
     // =====================================================
-    match /flightLogs/{docId} {
-      allow create, read, update, delete: if signedIn();
+    match /flightLogs/{flightId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
     }
 
-    match /units/{docId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin() || isManager();
+    match /units/{unitId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    match /malfunctionTypes/{docId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin() || isManager();
+    match /malfunctionTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    match /malfunctionSeverities/{docId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin() || isManager();
+    match /malfunctionSeverities/{sevId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    // תמיד בסוף: חסימה לכל מה שלא הוגדר למעלה
+    // =====================================================
+    // ============ ATP SUFA RULES =========================
+    // =====================================================
+    match /systemTypes/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /testDefinitions/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /tests/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /atpRecords/{docId} {
+      allow create: if isCreatingOwnRecord() || isAdmin();
+      allow read: if isAdmin() || isOwner();
+      allow update: if isAdmin() || (isOwner() && request.resource.data.ownerUid == resource.data.ownerUid);
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    // =====================================================
+    // ============ SUFA STATUS RULES (New) ================
+    // =====================================================
+    match /sufa/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      
+      match /drones/{droneId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+
+    // =====================================================
+    // ============ CATCH-ALL BLOCK ========================
+    // =====================================================
     match /{document=**} {
       allow read, write: if false;
     }
