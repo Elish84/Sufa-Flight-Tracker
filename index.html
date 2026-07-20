@@ -156,7 +156,18 @@
                                 <option value="90">90 ימים אחרונים</option>
                                 <option value="365">שנה אחרונה</option>
                                 <option value="all" selected>כל הזמן</option>
+                                <option value="custom">טווח מותאם אישית</option>
                             </select>
+                        </div>
+                        <div id="dash-custom-date-row" class="custom-date-container hidden">
+                            <div class="date-field">
+                                <label for="dash-start-date">מתאריך</label>
+                                <input type="date" id="dash-start-date">
+                            </div>
+                            <div class="date-field">
+                                <label for="dash-end-date">עד תאריך</label>
+                                <input type="date" id="dash-end-date">
+                            </div>
                         </div>
                         <div class="filter-row mt-10">
                             <select id="dash-tail-filter">
@@ -206,20 +217,31 @@
                             </div>
                             <div class="input-row">
                                 <div class="filter-item">
-                                    <label>תקופה:</label>
+                                    <label for="record-time-period">תקופה:</label>
                                     <select id="record-time-period" style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--border);">
                                         <option value="7">7 ימים אחרונים</option>
                                         <option value="30">30 ימים אחרונים</option>
                                         <option value="90">90 ימים אחרונים</option>
                                         <option value="365">שנה אחרונה</option>
                                         <option value="all" selected>כל הזמן</option>
+                                        <option value="custom">טווח מותאם אישית</option>
                                     </select>
                                 </div>
                                 <div class="filter-item">
-                                    <label>חומרה:</label>
+                                    <label for="record-severity-filter">חומרה:</label>
                                     <select id="record-severity-filter" style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--border);">
                                         <option value="">הכל</option>
                                     </select>
+                                </div>
+                            </div>
+                            <div id="record-custom-date-row" class="custom-date-container hidden">
+                                <div class="date-field">
+                                    <label for="record-start-date">מתאריך</label>
+                                    <input type="date" id="record-start-date">
+                                </div>
+                                <div class="date-field">
+                                    <label for="record-end-date">עד תאריך</label>
+                                    <input type="date" id="record-end-date">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">

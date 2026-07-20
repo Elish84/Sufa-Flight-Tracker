@@ -202,6 +202,10 @@ const App = {
         });
 
         document.getElementById('record-time-period').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-start-date').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-start-date').addEventListener('input', () => App.renderRecords());
+        document.getElementById('record-end-date').addEventListener('change', () => App.renderRecords());
+        document.getElementById('record-end-date').addEventListener('input', () => App.renderRecords());
         document.getElementById('record-severity-filter').addEventListener('change', () => App.renderRecords());
 
         document.getElementById('export-csv-btn').addEventListener('click', () => App.exportToCSV(false));
@@ -210,6 +214,10 @@ const App = {
 
         // Date & Tail Filters for Dashboard
         document.getElementById('dash-time-period').addEventListener('change', () => App.updateDashboard());
+        document.getElementById('dash-start-date').addEventListener('change', () => App.updateDashboard());
+        document.getElementById('dash-start-date').addEventListener('input', () => App.updateDashboard());
+        document.getElementById('dash-end-date').addEventListener('change', () => App.updateDashboard());
+        document.getElementById('dash-end-date').addEventListener('input', () => App.updateDashboard());
         document.getElementById('dash-tail-filter').addEventListener('change', () => App.updateDashboard());
 
         // Global Modal Close
@@ -482,7 +490,7 @@ const App = {
     },
 
     getMinDateFromPeriod: (periodValue) => {
-        if (periodValue === 'all') return null;
+        if (periodValue === 'all' || periodValue === 'custom') return null;
         const days = parseInt(periodValue);
         const d = new Date();
         d.setDate(d.getDate() - days);
@@ -491,6 +499,13 @@ const App = {
 
     updateDashboard: () => {
         const period = document.getElementById('dash-time-period').value;
+        const customDateRow = document.getElementById('dash-custom-date-row');
+        if (period === 'custom') {
+            customDateRow.classList.remove('hidden');
+        } else {
+            customDateRow.classList.add('hidden');
+        }
+
         const minDateStr = App.getMinDateFromPeriod(period);
         const tailFilter = document.getElementById('dash-tail-filter');
         const selectedTail = tailFilter.value;
@@ -508,7 +523,15 @@ const App = {
         });
 
         let filtered = App.allRecords;
-        if (minDateStr) filtered = filtered.filter(r => r.flightDate >= minDateStr);
+        if (period === 'custom') {
+            const startDate = document.getElementById('dash-start-date').value;
+            const endDate = document.getElementById('dash-end-date').value;
+            if (startDate) filtered = filtered.filter(r => r.flightDate >= startDate);
+            if (endDate) filtered = filtered.filter(r => r.flightDate <= endDate);
+        } else if (minDateStr) {
+            filtered = filtered.filter(r => r.flightDate >= minDateStr);
+        }
+
         if (selectedTail) filtered = filtered.filter(r => r.droneTailNumber === selectedTail);
 
         App.currentFilteredRecords = filtered;
@@ -780,6 +803,13 @@ const App = {
         list.innerHTML = '';
         
         const period = document.getElementById('record-time-period').value;
+        const customDateRow = document.getElementById('record-custom-date-row');
+        if (period === 'custom') {
+            customDateRow.classList.remove('hidden');
+        } else {
+            customDateRow.classList.add('hidden');
+        }
+
         const minDateStr = App.getMinDateFromPeriod(period);
         const severityFilterElement = document.getElementById('record-severity-filter');
         const selectedSeverity = severityFilterElement.value;
@@ -807,7 +837,14 @@ const App = {
             );
         }
 
-        if (minDateStr) filtered = filtered.filter(r => r.flightDate >= minDateStr);
+        if (period === 'custom') {
+            const startDate = document.getElementById('record-start-date').value;
+            const endDate = document.getElementById('record-end-date').value;
+            if (startDate) filtered = filtered.filter(r => r.flightDate >= startDate);
+            if (endDate) filtered = filtered.filter(r => r.flightDate <= endDate);
+        } else if (minDateStr) {
+            filtered = filtered.filter(r => r.flightDate >= minDateStr);
+        }
         if (selectedSeverity) {
             filtered = filtered.filter(r => {
                 if (r.malfunctions && r.malfunctions.length > 0) {
