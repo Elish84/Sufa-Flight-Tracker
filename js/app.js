@@ -946,10 +946,29 @@ const App = {
         }
 
         // 1. Summary period
+        const period = document.getElementById('record-time-period').value;
+        let requestedStart = '';
+        let requestedEnd = '';
+        
+        if (period === 'custom') {
+            requestedStart = document.getElementById('record-start-date').value;
+            requestedEnd = document.getElementById('record-end-date').value;
+        } else if (period !== 'all') {
+            requestedStart = App.getMinDateFromPeriod(period);
+            requestedEnd = new Date().toISOString().split('T')[0];
+        }
+
         const dates = data.map(r => r.flightDate).sort();
-        const minDate = Utils.formatDate(dates[0]);
-        const maxDate = Utils.formatDate(dates[dates.length - 1]);
-        const periodStr = (minDate === maxDate) ? minDate : `${minDate} - ${maxDate}`;
+        const dataMinDate = dates[0];
+        const dataMaxDate = dates[dates.length - 1];
+
+        const minDateToUse = requestedStart ? requestedStart : dataMinDate;
+        const maxDateToUse = requestedEnd ? requestedEnd : dataMaxDate;
+        
+        const minDateStr = Utils.formatDate(minDateToUse);
+        const maxDateStr = Utils.formatDate(maxDateToUse);
+        
+        const periodStr = (minDateStr === maxDateStr) ? minDateStr : `${minDateStr} - ${maxDateStr}`;
 
         // 2. Total accumulated flight hours
         const totalMinutes = data.reduce((acc, r) => acc + (r.totalFlightMinutes || 0), 0);
